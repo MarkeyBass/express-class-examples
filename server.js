@@ -7,6 +7,19 @@ const TODOS_PATH = process.env.TODOS_PATH || "./data/todos.json";
 
 // ==================== UTILITY FUNCTIONS ====================
 
+const getNextId = (todos) => {
+  if (!todos || todos.length === 0) {
+    return 1;
+  }
+  let maxValue = 0;
+  todos.forEach((todo) => {
+    if (todo.id > maxValue) {
+      maxValue = todo.id;
+    }
+  });
+  return maxValue + 1;
+};
+
 async function fileExists(filePath) {
   try {
     await fs.access(filePath, fs.constants.F_OK);
@@ -20,12 +33,12 @@ async function fileExists(filePath) {
  * Read todos from JSON file
  * @returns {Array} Array of todo objects
  */
-const readTodos = async () => {
-  if (!(await fileExists(JSON_FILE))) {
+const readTodos = async (path) => {
+  if (!(await fileExists(path))) {
     return [];
   }
   try {
-    const data = await fs.readFile(JSON_FILE, "utf8");
+    const data = await fs.readFile(path, "utf8");
     return JSON.parse(data);
   } catch (error) {
     // If file is corrupted or empty, return empty array
@@ -37,8 +50,8 @@ const readTodos = async () => {
  * Write todos to JSON file
  * @param {Array} todos - Array of todo objects
  */
-const writeTodos = async (todos) => {
-  await fs.writeFile(JSON_FILE, JSON.stringify(todos, null, 2), "utf8");
+const writeTodos = async (todos, path) => {
+  await fs.writeFile(path, JSON.stringify(todos, null, 2), "utf8");
 };
 
 // Body parser
@@ -58,7 +71,7 @@ app.get("/", async (req, res) => {
 
 app.get("/todos", async (req, res) => {
   try {
-    const todosArr = await readTodos();
+    const todosArr = await readTodos(TODOS_PATH);
     res.status(200).json({ msg: "success", data: todosArr });
   } catch (err) {
     console.error(err);
@@ -69,18 +82,17 @@ app.get("/todos", async (req, res) => {
 // Create todo
 app.post("/todos", async (req, res) => {
   try {
-    const todos = await fs.readFile(TODOS_PATH, "utf8");
-    const todosArr = JSON.parse(todos);
+    const todos = await readTodos(TODOS_PATH)
     const newTodo = {
       title: req.body.title || "default todo",
       description: req.body.description || "",
       completed: req.body.completed || false,
-      id: Math.random(),
+      id: getNextId(todos),
       created_at: new Date(),
       updated_at: new Date(),
     };
-    todosArr.push(newTodo);
-    await writeTodos(todosArr);
+    todos.push(newTodo);
+    await writeTodos(todos, TODOS_PATH);
     res.status(201).json({ msg: "success", data: req.body });
   } catch (err) {
     console.error(err);
