@@ -148,7 +148,6 @@ app.get("/headers-example", (req, res) => {
       msg: "Unauthorized to access this resource",
     });
   }
-  res.status(200).json({ headers });
 });
 
 app.listen(PORT, () => {
