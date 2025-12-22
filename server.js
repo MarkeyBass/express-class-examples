@@ -62,6 +62,8 @@ app.use((req, res, next) => {
   next();
 });
 
+// ================== ROUTES ===================
+
 app.get("/", async (req, res) => {
   res.json({
     message: "Welcome to Todo List API",
@@ -69,10 +71,19 @@ app.get("/", async (req, res) => {
   });
 });
 
+// {baseUrl}/todos
+// {baseUrl}/todos?completed=true
+// {baseUrl}/todos?completed=false
 app.get("/todos", async (req, res) => {
   try {
+    const { completed } = req.query;
+
     const todosArr = await readTodos(TODOS_PATH);
-    res.status(200).json({ msg: "success", data: todosArr });
+    let filterdArr = todosArr;
+    if (completed !== undefined) {
+      filterdArr = todosArr.filter((todo) => String(todo.completed) === completed);
+    }
+    res.status(200).json({ msg: "success", data: filterdArr });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "error" + err.message, data: null });
@@ -82,7 +93,7 @@ app.get("/todos", async (req, res) => {
 // Create todo
 app.post("/todos", async (req, res) => {
   try {
-    const todos = await readTodos(TODOS_PATH)
+    const todos = await readTodos(TODOS_PATH);
     const newTodo = {
       title: req.body.title || "default todo",
       description: req.body.description || "",
@@ -98,6 +109,29 @@ app.post("/todos", async (req, res) => {
     console.error(err);
     res.status(500).json({ msg: "error" + err.message, data: null });
   }
+});
+
+// example headers
+app.get("/headers-example", (req, res) => {
+  const headers = req.headers;
+  console.log(headers);
+  if (headers["x-user-role"] === "simple-user") {
+    return res.status(401).json({
+      success: false,
+      msg: "Simple User is Unauthorized",
+    });
+  } else if (headers["x-user-role"] === "admin") {
+    return res.status(200).json({
+      success: true,
+      msg: "Admin is Authorized",
+    });
+  } else {
+    return res.status(401).json({
+      success: false,
+      msg: "Unauthorized to access this resource",
+    });
+  }
+  res.status(200).json({ headers });
 });
 
 app.listen(PORT, () => {
