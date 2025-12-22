@@ -111,10 +111,13 @@ app.delete("/todos/:id", async (req, res) => {
 app.post("/todos", async (req, res) => {
   try {
     const todos = await readTodos(TODOS_PATH);
+
+    const isCompleted = req.body.completed === "true";
+
     const newTodo = {
       title: req.body.title || "default todo",
       description: req.body.description || "",
-      completed: req.body.completed || false,
+      completed: isCompleted,
       id: getNextId(todos),
       created_at: new Date(),
       updated_at: new Date(),
