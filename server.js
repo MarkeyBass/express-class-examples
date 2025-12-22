@@ -1,58 +1,12 @@
 import express from "express";
-import fs from "fs/promises";
+import { getNextId, writeTodos, readTodos } from "./utils/todosStorage.js";
+import path from "path";
 
+const __dirname = path.resolve();
 const app = express();
 const PORT = process.env.PORT || 8000;
-const TODOS_PATH = process.env.TODOS_PATH || "./data/todos.json";
-
-// ==================== UTILITY FUNCTIONS ====================
-
-const getNextId = (todos) => {
-  if (!todos || todos.length === 0) {
-    return 1;
-  }
-  let maxValue = 0;
-  todos.forEach((todo) => {
-    if (todo.id > maxValue) {
-      maxValue = todo.id;
-    }
-  });
-  return maxValue + 1;
-};
-
-async function fileExists(filePath) {
-  try {
-    await fs.access(filePath, fs.constants.F_OK);
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-/**
- * Read todos from JSON file
- * @returns {Array} Array of todo objects
- */
-const readTodos = async (path) => {
-  if (!(await fileExists(path))) {
-    return [];
-  }
-  try {
-    const data = await fs.readFile(path, "utf8");
-    return JSON.parse(data);
-  } catch (error) {
-    // If file is corrupted or empty, return empty array
-    return [];
-  }
-};
-
-/**
- * Write todos to JSON file
- * @param {Array} todos - Array of todo objects
- */
-const writeTodos = async (todos, path) => {
-  await fs.writeFile(path, JSON.stringify(todos, null, 2), "utf8");
-};
+const TODOS_PATH = process.env.TODOS_PATH || path.join(__dirname, "data", "todos.json");
+// const TODOS_PATH = process.env.TODOS_PATH || __dirname + "/data/todos.json";
 
 // Body parser
 app.use(express.json());
@@ -91,6 +45,24 @@ app.get("/todos", async (req, res) => {
 });
 
 // {baseUrl}/todos/1
+app.get("/todos/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const intId = parseInt(id);
+    if (isNaN(intId)) throw new Error("Invalid id, please use an integer.");
+    const todos = await readTodos(TODOS_PATH);
+    const todo = todos.find((t) => t.id === intId);
+    if (!todo) {
+      res.status(404).json({ success: false, data: {} });
+    } else {
+      res.status(200).json({ success: true, data: todo });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, data: error.message });
+  }
+});
+
+// {baseUrl}/todos/1
 app.put("/todos/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -115,7 +87,7 @@ app.put("/todos/:id", async (req, res) => {
 });
 
 // {baseUrl}/todos/1
-app.get("/todos/:id", async (req, res) => {
+app.delete("/todos/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const intId = parseInt(id);
@@ -125,7 +97,10 @@ app.get("/todos/:id", async (req, res) => {
     if (!todo) {
       res.status(404).json({ success: false, data: {} });
     } else {
-      res.status(200).json({ success: true, data: todo });
+      const indexToDelete = todos.findIndex((t) => t.id === intId);
+      todos.splice(indexToDelete, 1);
+      await writeTodos(todos, TODOS_PATH);
+      res.status(200).json({ success: true, data: {} });
     }
   } catch (error) {
     res.status(500).json({ success: false, data: error.message });
