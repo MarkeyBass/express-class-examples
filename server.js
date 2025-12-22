@@ -91,11 +91,34 @@ app.get("/todos", async (req, res) => {
 });
 
 // {baseUrl}/todos/1
+app.put("/todos/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { body } = req;
+    const intId = parseInt(id);
+    if (isNaN(intId)) throw new Error("Invalid id, please use an integer.");
+    const todos = await readTodos(TODOS_PATH);
+    const todo = todos.find((t) => t.id === intId);
+    if (!todo) {
+      res.status(404).json({ success: false, data: {} });
+    } else {
+      todo.title = body.title || todo.title;
+      todo.description = body.description || todo.description;
+      todo.completed = body.completed || todo.completed;
+      todo.updated_at = new Date();
+      await writeTodos(todos, TODOS_PATH);
+      res.status(200).json({ success: true, data: todo });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, data: error.message });
+  }
+});
+
+// {baseUrl}/todos/1
 app.get("/todos/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const intId = parseInt(id);
-    console.log(intId);
     if (isNaN(intId)) throw new Error("Invalid id, please use an integer.");
     const todos = await readTodos(TODOS_PATH);
     const todo = todos.find((t) => t.id === intId);
