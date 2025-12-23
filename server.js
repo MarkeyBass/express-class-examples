@@ -29,51 +29,6 @@ app.get("/", async (req, res) => {
 
 app.use("/todos", todos);
 
-// {baseUrl}/todos/1
-app.delete("/todos/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const intId = parseInt(id);
-    if (isNaN(intId)) throw new Error("Invalid id, please use an integer.");
-    const todos = await readTodos(TODOS_PATH);
-    const todo = todos.find((t) => t.id === intId);
-    if (!todo) {
-      res.status(404).json({ success: false, data: {} });
-    } else {
-      const indexToDelete = todos.findIndex((t) => t.id === intId);
-      todos.splice(indexToDelete, 1);
-      await writeTodos(todos, TODOS_PATH);
-      res.status(200).json({ success: true, data: {} });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, data: error.message });
-  }
-});
-
-// Create todo
-app.post("/todos", async (req, res) => {
-  try {
-    const todos = await readTodos(TODOS_PATH);
-
-    const isCompleted = req.body.completed === "true";
-
-    const newTodo = {
-      title: req.body.title || "default todo",
-      description: req.body.description || "",
-      completed: isCompleted,
-      id: getNextId(todos),
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
-    todos.push(newTodo);
-    await writeTodos(todos, TODOS_PATH);
-    res.status(201).json({ msg: "success", data: req.body });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "error" + err.message, data: null });
-  }
-});
-
 // example headers
 app.get("/headers-example", (req, res) => {
   const headers = req.headers;
