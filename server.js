@@ -1,5 +1,4 @@
 import express from "express";
-import { getNextId, writeTodos, readTodos } from "./utils/todosStorage.js";
 import path from "path";
 
 const __dirname = path.resolve();
@@ -9,6 +8,7 @@ const TODOS_PATH = process.env.TODOS_PATH || path.join(__dirname, "data", "todos
 // const TODOS_PATH = process.env.TODOS_PATH || __dirname + "/data/todos.json";
 
 import todos from "./routes/todos.js"
+import exampleHeaders from "./routes/example-headers.js"
 
 // Body parser
 app.use(express.json());
@@ -28,28 +28,8 @@ app.get("/", async (req, res) => {
 });
 
 app.use("/todos", todos);
+app.use("/headers-example", exampleHeaders);
 
-// example headers
-app.get("/headers-example", (req, res) => {
-  const headers = req.headers;
-  console.log(headers);
-  if (headers["x-user-role"] === "simple-user") {
-    return res.status(401).json({
-      success: false,
-      msg: "Simple User is Unauthorized",
-    });
-  } else if (headers["x-user-role"] === "admin") {
-    return res.status(200).json({
-      success: true,
-      msg: "Admin is Authorized",
-    });
-  } else {
-    return res.status(401).json({
-      success: false,
-      msg: "Unauthorized to access this resource",
-    });
-  }
-});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}...`);
